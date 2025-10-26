@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1><i class="fas fa-chart-line me-2"></i>Rental Dashboard</h1>
+            <p class="text-muted">Overview of rental operations and key metrics</p>
+        </div>
+    </div>
+
+    <!-- Key Metrics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white">Total Revenue</h6>
+                            <h2 class="mb-0">${{ "%.2f"|format(total_revenue) }}</h2>
+                        </div>
+                        <i class="fas fa-dollar-sign fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white">Active Rentals</h6>
+                            <h2 class="mb-0">{{ active_rentals_count }}</h2>
+                        </div>
+                        <i class="fas fa-clipboard-check fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-danger">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white">Overdue Rentals</h6>
+                            <h2 class="mb-0">{{ overdue_rentals_count }}</h2>
+                        </div>
+                        <i class="fas fa-exclamation-triangle fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white">Late Fees Collected</h6>
+                            <h2 class="mb-0">${{ "%.2f"|format(total_late_fees) }}</h2>
+                        </div>
+                        <i class="fas fa-coins fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Most Rented Equipment -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-trophy me-2"></i>Most Rented Equipment</h5>
+                </div>
+                <div class="card-body">
+                    {% if most_rented_equipment %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Equipment</th>
+                                        <th>Type</th>
+                                        <th class="text-center">Rentals</th>
+                                        <th class="text-end">Revenue</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for equipment in most_rented_equipment %}
+                                    <tr>
+                                        <td>{{ equipment.equipment_name }}</td>
+                                        <td><span class="badge bg-secondary">{{ equipment.equipment_type }}</span></td>
+                                        <td class="text-center"><span class="badge bg-info">{{ equipment.rental_count }}</span></td>
+                                        <td class="text-end">${{ "%.2f"|format(equipment.total_revenue) }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No rental data available yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Overdue Rentals -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-circle me-2"></i>Overdue Rentals (10% Late Fee)</h5>
+                </div>
+                <div class="card-body">
+                    {% if overdue_rentals %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Customer</th>
+                                        <th>Days Overdue</th>
+                                        <th class="text-end">Late Fee</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for rental in overdue_rentals %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('rentals.view_rental', rental_id=rental.rental_id) }}" class="text-decoration-none">
+                                                #{{ rental.rental_id }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            {{ rental.first_name }} {{ rental.last_name }}
+                                            <br><small class="text-muted">{{ rental.phone }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-danger">{{ rental.days_overdue }} days</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <strong class="text-danger">${{ "%.2f"|format(rental.late_fee) }}</strong>
+                                            <br><small class="text-muted">Total: ${{ "%.2f"|format(rental.total_cost) }}</small>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-success mb-0">
+                            <i class="fas fa-check-circle me-2"></i>No overdue rentals!
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Rentals -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Recent Rentals</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_rentals %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Customer</th>
+                                        <th>Rental Date</th>
+                                        <th>Due Date</th>
+                                        <th>Status</th>
+                                        <th>Employee</th>
+                                        <th class="text-end">Total Cost</th>
+                                        <th class="text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for rental in recent_rentals %}
+                                    <tr>
+                                        <td>#{{ rental.rental_id }}</td>
+                                        <td>{{ rental.first_name }} {{ rental.last_name }}</td>
+                                        <td>{{ rental.rental_date }}</td>
+                                        <td>{{ rental.due_date }}</td>
+                                        <td>
+                                            {% if rental.status == 'Active' %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% elif rental.status == 'Overdue' %}
+                                                <span class="badge bg-danger">Overdue</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Completed</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ rental.employee_first_name }} {{ rental.employee_last_name }}</td>
+                                        <td class="text-end">${{ "%.2f"|format(rental.total_cost) }}</td>
+                                        <td class="text-center">
+                                            <a href="{{ url_for('rentals.view_rental', rental_id=rental.rental_id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i> View
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No recent rentals.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

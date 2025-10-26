@@ -3,13 +3,17 @@ from .app_factory import create_app
 from .db_connect import close_db, get_db
 
 app = create_app()
-app.secret_key = 'your-secret'  # Replace with an environment
 
 # Register Blueprints
-from app.blueprints.examples import examples
+from app.blueprints.auth import auth
+from app.blueprints.dashboard import dashboard
+from app.blueprints.rentals import rentals
 
-app.register_blueprint(examples, url_prefix='/example')
+app.register_blueprint(auth)
+app.register_blueprint(dashboard)
+app.register_blueprint(rentals)
 
+# Import routes (for any non-blueprint routes)
 from . import routes
 
 @app.before_request

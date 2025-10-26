@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1><i class="fas fa-clipboard-list me-2"></i>All Rentals</h1>
+            <p class="text-muted">Manage and view all rental transactions</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    {% if rentals %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Customer</th>
+                                        <th>Contact</th>
+                                        <th>Rental Date</th>
+                                        <th>Due Date</th>
+                                        <th>Return Date</th>
+                                        <th>Status</th>
+                                        <th>Employee</th>
+                                        <th class="text-end">Subtotal</th>
+                                        <th class="text-end">Late Fee</th>
+                                        <th class="text-end">Total</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for rental in rentals %}
+                                    <tr>
+                                        <td>#{{ rental.rental_id }}</td>
+                                        <td>{{ rental.customer_first_name }} {{ rental.customer_last_name }}</td>
+                                        <td>
+                                            <small>{{ rental.customer_phone }}<br>{{ rental.customer_email }}</small>
+                                        </td>
+                                        <td>{{ rental.rental_date }}</td>
+                                        <td>{{ rental.due_date }}</td>
+                                        <td>
+                                            {% if rental.return_date %}
+                                                {{ rental.return_date }}
+                                            {% else %}
+                                                <span class="text-muted">Not returned</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if rental.status == 'Active' %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% elif rental.status == 'Overdue' %}
+                                                <span class="badge bg-danger">Overdue ({{ rental.days_overdue }} days)</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Completed</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ rental.employee_first_name }} {{ rental.employee_last_name }}</td>
+                                        <td class="text-end">${{ "%.2f"|format(rental.subtotal) }}</td>
+                                        <td class="text-end">
+                                            {% if rental.late_fee > 0 %}
+                                                <span class="text-danger">${{ "%.2f"|format(rental.late_fee) }}</span>
+                                            {% else %}
+                                                $0.00
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end"><strong>${{ "%.2f"|format(rental.total_cost) }}</strong></td>
+                                        <td class="text-center">
+                                            <a href="{{ url_for('rentals.view_rental', rental_id=rental.rental_id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i> View
+                                            </a>
+                                            {% if rental.status != 'Completed' %}
+                                                <form method="POST" action="{{ url_for('rentals.return_rental', rental_id=rental.rental_id) }}" class="d-inline">
+                                                    <button type="submit" class="btn btn-sm btn-outline-success" onclick="return confirm('Mark this rental as returned?')">
+                                                        <i class="fas fa-check"></i> Return
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>No rentals found.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

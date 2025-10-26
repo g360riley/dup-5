@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1><i class="fas fa-file-invoice me-2"></i>Rental Details #{{ rental.rental_id }}</h1>
+            <a href="{{ url_for('rentals.list_rentals') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Rentals
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Rental Information -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Rental Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th width="40%">Rental ID:</th>
+                            <td>#{{ rental.rental_id }}</td>
+                        </tr>
+                        <tr>
+                            <th>Rental Date:</th>
+                            <td>{{ rental.rental_date }}</td>
+                        </tr>
+                        <tr>
+                            <th>Due Date:</th>
+                            <td>{{ rental.due_date }}</td>
+                        </tr>
+                        <tr>
+                            <th>Return Date:</th>
+                            <td>
+                                {% if rental.return_date %}
+                                    {{ rental.return_date }}
+                                {% else %}
+                                    <span class="text-muted">Not returned yet</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Status:</th>
+                            <td>
+                                {% if rental.status == 'Active' %}
+                                    <span class="badge bg-success">Active</span>
+                                {% elif rental.status == 'Overdue' %}
+                                    <span class="badge bg-danger">Overdue ({{ rental.days_overdue }} days)</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Completed</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Employee:</th>
+                            <td>{{ rental.employee_first_name }} {{ rental.employee_last_name }}</td>
+                        </tr>
+                        {% if rental.notes %}
+                        <tr>
+                            <th>Notes:</th>
+                            <td>{{ rental.notes }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+
+                    {% if rental.status != 'Completed' %}
+                        <form method="POST" action="{{ url_for('rentals.return_rental', rental_id=rental.rental_id) }}">
+                            <button type="submit" class="btn btn-success w-100" onclick="return confirm('Mark this rental as returned? Late fees will be calculated automatically.')">
+                                <i class="fas fa-check-circle me-2"></i>Process Return
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer Information -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-user me-2"></i>Customer Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th width="40%">Name:</th>
+                            <td>{{ rental.customer_first_name }} {{ rental.customer_last_name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Email:</th>
+                            <td>{{ rental.customer_email }}</td>
+                        </tr>
+                        <tr>
+                            <th>Phone:</th>
+                            <td>{{ rental.customer_phone }}</td>
+                        </tr>
+                        <tr>
+                            <th>Address:</th>
+                            <td>
+                                {{ rental.customer_address }}<br>
+                                {{ rental.customer_city }}, {{ rental.customer_state }} {{ rental.customer_zip }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Driver's License:</th>
+                            <td>{{ rental.drivers_license }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rental Items -->
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-toolbox me-2"></i>Rental Items</h5>
+                </div>
+                <div class="card-body">
+                    {% if rental_items %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Equipment</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                        <th class="text-center">Quantity</th>
+                                        <th class="text-end">Daily Rate</th>
+                                        <th class="text-center">Days Rented</th>
+                                        <th class="text-end">Line Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in rental_items %}
+                                    <tr>
+                                        <td>{{ item.equipment_name }}</td>
+                                        <td><span class="badge bg-secondary">{{ item.equipment_type }}</span></td>
+                                        <td>{{ item.description }}</td>
+                                        <td class="text-center">{{ item.quantity }}</td>
+                                        <td class="text-end">${{ "%.2f"|format(item.daily_rate) }}</td>
+                                        <td class="text-center">{{ item.days_rented }}</td>
+                                        <td class="text-end">${{ "%.2f"|format(item.line_total) }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No items found for this rental.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cost Summary -->
+    <div class="row">
+        <div class="col-md-6 offset-md-6">
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0"><i class="fas fa-calculator me-2"></i>Cost Summary</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless mb-0">
+                        <tr>
+                            <th width="60%">Subtotal:</th>
+                            <td class="text-end">${{ "%.2f"|format(rental.subtotal) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Late Fee (10%):</th>
+                            <td class="text-end">
+                                {% if rental.late_fee > 0 %}
+                                    <span class="text-danger">${{ "%.2f"|format(rental.late_fee) }}</span>
+                                {% else %}
+                                    $0.00
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr class="border-top">
+                            <th><h5>Total Cost:</h5></th>
+                            <td class="text-end"><h5><strong>${{ "%.2f"|format(rental.total_cost) }}</strong></h5></td>
+                        </tr>
+                    </table>
+                    {% if rental.late_fee > 0 %}
+                        <div class="alert alert-warning mt-3 mb-0">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            A 10% late fee has been applied to this rental.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
