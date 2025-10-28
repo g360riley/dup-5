@@ -38,5 +38,12 @@ def login():
 @login_required
 def logout():
     logout_user()
+    # Clear all session data to ensure complete logout
+    session.clear()
     flash('You have been logged out successfully.', 'info')
-    return redirect(url_for('auth.login'))
+    response = redirect(url_for('auth.login'))
+    # Set cache control headers on logout response to prevent caching
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, private'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
