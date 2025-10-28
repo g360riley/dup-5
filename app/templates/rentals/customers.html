@@ -3,18 +3,41 @@
 {% block content %}
 <div class="container-fluid">
     <div class="row mb-4">
-        <div class="col-12">
-            <h1><i class="fas fa-users me-2"></i>Customers</h1>
-            <p class="text-muted">View all registered customers and their rental history</p>
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-users me-2"></i>Customers</h1>
+                <p class="text-muted">View all registered customers and their rental history</p>
+            </div>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createCustomerModal">
+                <i class="fas fa-plus me-2"></i>Add New Customer
+            </button>
         </div>
     </div>
 
     <div class="row">
         <div class="col-12">
             <div class="card">
+                <!-- Tabs -->
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link {% if status_filter == 'active' %}active{% endif %}"
+                               href="{{ url_for('rentals.list_customers', status='active') }}">
+                                <i class="fas fa-user-check me-2"></i>Active Customers
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link {% if status_filter == 'archived' %}active{% endif %}"
+                               href="{{ url_for('rentals.list_customers', status='archived') }}">
+                                <i class="fas fa-archive me-2"></i>Archived Customers
+                            </a>
+                        </li>
+                    </ul>
+                </div>
                 <div class="card-body">
                     {% if customers %}
-                        <div class="table-responsive">
+                        <!-- Table View (Desktop) -->
+                        <div class="table-responsive table-view">
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
@@ -27,6 +50,7 @@
                                         <th class="text-center">Total Rentals</th>
                                         <th class="text-end">Total Spent</th>
                                         <th>Member Since</th>
+                                        <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -48,10 +72,83 @@
                                             <strong>${{ "%.2f"|format(customer.total_spent) }}</strong>
                                         </td>
                                         <td>{{ customer.created_at.strftime('%Y-%m-%d') if customer.created_at else 'N/A' }}</td>
+                                        <td class="text-center">
+                                            {% if status_filter == 'archived' %}
+                                                <!-- Archived tab: Show Restore and Delete -->
+                                                <button class="btn btn-sm btn-outline-success" onclick="unarchiveCustomer({{ customer.customer_id }}, '{{ customer.first_name }} {{ customer.last_name }}')" title="Restore Customer">
+                                                    <i class="fas fa-undo"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger" onclick="deleteCustomer({{ customer.customer_id }}, '{{ customer.first_name }} {{ customer.last_name }}')" title="Delete Customer">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            {% else %}
+                                                <!-- Active tab: Show Edit and Archive -->
+                                                <button class="btn btn-sm btn-outline-primary" onclick="editCustomer({{ customer.customer_id }}, '{{ customer.first_name }}', '{{ customer.last_name }}', '{{ customer.email }}', '{{ customer.phone }}', '{{ customer.address }}', '{{ customer.city }}', '{{ customer.state }}', '{{ customer.zip_code }}', '{{ customer.drivers_license }}')" title="Edit Customer">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-warning" onclick="archiveCustomer({{ customer.customer_id }}, '{{ customer.first_name }} {{ customer.last_name }}')" title="Archive Customer">
+                                                    <i class="fas fa-archive"></i>
+                                                </button>
+                                            {% endif %}
+                                        </td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
+                        </div>
+
+                        <!-- Card View (Mobile) -->
+                        <div class="card-view">
+                            {% for customer in customers %}
+                            <div class="mobile-card">
+                                <div class="mobile-card-header">
+                                    <h6 class="mb-1">
+                                        <strong>#{{ customer.customer_id }}</strong> - {{ customer.first_name }} {{ customer.last_name }}
+                                    </h6>
+                                </div>
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Email</span>
+                                    <span class="mobile-card-value">{{ customer.email }}</span>
+                                </div>
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Phone</span>
+                                    <span class="mobile-card-value">{{ customer.phone }}</span>
+                                </div>
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Address</span>
+                                    <span class="mobile-card-value">
+                                        {{ customer.city }}, {{ customer.state }} {{ customer.zip_code }}
+                                    </span>
+                                </div>
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Total Rentals</span>
+                                    <span class="mobile-card-value">
+                                        <span class="badge bg-primary">{{ customer.total_rentals }}</span>
+                                    </span>
+                                </div>
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Total Spent</span>
+                                    <span class="mobile-card-value"><strong>${{ "%.2f"|format(customer.total_spent) }}</strong></span>
+                                </div>
+                                <div class="d-flex gap-2 mt-3">
+                                    {% if status_filter == 'archived' %}
+                                        <button class="btn btn-sm btn-outline-success flex-fill" onclick="unarchiveCustomer({{ customer.customer_id }}, '{{ customer.first_name }} {{ customer.last_name }}')">
+                                            <i class="fas fa-undo"></i> Restore
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger flex-fill" onclick="deleteCustomer({{ customer.customer_id }}, '{{ customer.first_name }} {{ customer.last_name }}')">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    {% else %}
+                                        <button class="btn btn-sm btn-outline-primary flex-fill" onclick="editCustomer({{ customer.customer_id }}, '{{ customer.first_name }}', '{{ customer.last_name }}', '{{ customer.email }}', '{{ customer.phone }}', '{{ customer.address }}', '{{ customer.city }}', '{{ customer.state }}', '{{ customer.zip_code }}', '{{ customer.drivers_license }}')">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-warning flex-fill" onclick="archiveCustomer({{ customer.customer_id }}, '{{ customer.first_name }} {{ customer.last_name }}')">
+                                            <i class="fas fa-archive"></i> Archive
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
                         </div>
                     {% else %}
                         <div class="alert alert-info">
@@ -63,4 +160,240 @@
         </div>
     </div>
 </div>
+
+<!-- Create Customer Modal -->
+<div class="modal fade" id="createCustomerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-plus me-2"></i>Add New Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('rentals.create_customer') }}">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">First Name *</label>
+                            <input type="text" class="form-control" name="first_name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Last Name *</label>
+                            <input type="text" class="form-control" name="last_name" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email *</label>
+                            <input type="email" class="form-control" name="email" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Phone *</label>
+                            <input type="tel" class="form-control" name="phone" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Address</label>
+                        <input type="text" class="form-control" name="address">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">City</label>
+                            <input type="text" class="form-control" name="city">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">State</label>
+                            <input type="text" class="form-control" name="state" maxlength="2">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Zip Code</label>
+                            <input type="text" class="form-control" name="zip_code">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Driver's License</label>
+                        <input type="text" class="form-control" name="drivers_license">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Customer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Customer Modal -->
+<div class="modal fade" id="editCustomerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Edit Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="editCustomerForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">First Name *</label>
+                            <input type="text" class="form-control" name="first_name" id="edit_first_name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Last Name *</label>
+                            <input type="text" class="form-control" name="last_name" id="edit_last_name" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email *</label>
+                            <input type="email" class="form-control" name="email" id="edit_email" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Phone *</label>
+                            <input type="tel" class="form-control" name="phone" id="edit_phone" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Address</label>
+                        <input type="text" class="form-control" name="address" id="edit_address">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">City</label>
+                            <input type="text" class="form-control" name="city" id="edit_city">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">State</label>
+                            <input type="text" class="form-control" name="state" id="edit_state" maxlength="2">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Zip Code</label>
+                            <input type="text" class="form-control" name="zip_code" id="edit_zip_code">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Driver's License</label>
+                        <input type="text" class="form-control" name="drivers_license" id="edit_drivers_license">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Archive Customer Modal -->
+<div class="modal fade" id="archiveCustomerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title"><i class="fas fa-archive me-2"></i>Archive Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="archiveCustomerForm">
+                <div class="modal-body">
+                    <p>Are you sure you want to archive <strong id="archive_customer_name"></strong>?</p>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Archived customers will be hidden from the active list but all historical rental data and revenue will be preserved for reporting.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">Archive Customer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Unarchive Customer Modal -->
+<div class="modal fade" id="unarchiveCustomerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-undo me-2"></i>Restore Customer</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="unarchiveCustomerForm">
+                <div class="modal-body">
+                    <p>Are you sure you want to restore <strong id="unarchive_customer_name"></strong>?</p>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        This customer will be restored to the active customer list.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Restore Customer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Customer Modal -->
+<div class="modal fade" id="deleteCustomerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle me-2"></i>Delete Customer</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="deleteCustomerForm">
+                <div class="modal-body">
+                    <p>Are you sure you want to permanently delete <strong id="delete_customer_name"></strong>?</p>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle me-2"></i>
+                        This action cannot be undone. Only archived customers without rental history can be deleted.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete Customer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function editCustomer(id, firstName, lastName, email, phone, address, city, state, zipCode, driversLicense) {
+    document.getElementById('editCustomerForm').action = "{{ url_for('rentals.edit_customer', customer_id=0) }}".replace('0', id);
+    document.getElementById('edit_first_name').value = firstName;
+    document.getElementById('edit_last_name').value = lastName;
+    document.getElementById('edit_email').value = email;
+    document.getElementById('edit_phone').value = phone;
+    document.getElementById('edit_address').value = address;
+    document.getElementById('edit_city').value = city;
+    document.getElementById('edit_state').value = state;
+    document.getElementById('edit_zip_code').value = zipCode;
+    document.getElementById('edit_drivers_license').value = driversLicense;
+    new bootstrap.Modal(document.getElementById('editCustomerModal')).show();
+}
+
+function archiveCustomer(id, name) {
+    document.getElementById('archiveCustomerForm').action = "{{ url_for('rentals.archive_customer', customer_id=0) }}".replace('0', id);
+    document.getElementById('archive_customer_name').textContent = name;
+    new bootstrap.Modal(document.getElementById('archiveCustomerModal')).show();
+}
+
+function unarchiveCustomer(id, name) {
+    document.getElementById('unarchiveCustomerForm').action = "{{ url_for('rentals.unarchive_customer', customer_id=0) }}".replace('0', id);
+    document.getElementById('unarchive_customer_name').textContent = name;
+    new bootstrap.Modal(document.getElementById('unarchiveCustomerModal')).show();
+}
+
+function deleteCustomer(id, name) {
+    document.getElementById('deleteCustomerForm').action = "{{ url_for('rentals.delete_customer', customer_id=0) }}".replace('0', id);
+    document.getElementById('delete_customer_name').textContent = name;
+    new bootstrap.Modal(document.getElementById('deleteCustomerModal')).show();
+}
+</script>
 {% endblock %}

@@ -201,69 +201,310 @@
         .badge.bg-primary {
             background-color: var(--primary-purple) !important;
         }
+
+        /* Sidebar Styles */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 260px;
+            background: linear-gradient(180deg, var(--slate) 0%, var(--deep-purple) 100%);
+            padding: 0;
+            box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .sidebar-brand {
+            padding: 1.5rem 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-brand h4 {
+            color: white;
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+
+        .sidebar-brand i {
+            color: var(--emerald);
+        }
+
+        .sidebar-nav {
+            list-style: none;
+            padding: 1.5rem 0;
+            margin: 0;
+        }
+
+        .sidebar-nav-item {
+            margin: 0.5rem 0;
+        }
+
+        .sidebar-nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.9rem 1.5rem;
+            color: rgba(255, 255, 255, 0.85);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .sidebar-nav-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-left-color: var(--emerald);
+            padding-left: 2rem;
+        }
+
+        .sidebar-nav-link.active {
+            background: linear-gradient(90deg, var(--primary-purple), var(--indigo));
+            color: white;
+            border-left-color: var(--emerald);
+            box-shadow: 0 2px 8px rgba(108, 92, 231, 0.4);
+        }
+
+        .sidebar-nav-link i {
+            width: 24px;
+            margin-right: 0.75rem;
+            font-size: 1.1rem;
+        }
+
+        /* Main content with sidebar */
+        .main-wrapper {
+            margin-left: 260px;
+            min-height: 100vh;
+        }
+
+        .top-navbar {
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            padding: 1rem 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .main-content {
+            padding: 0 2rem 2rem 2rem;
+        }
+
+        /* Mobile Toggle Button */
+        .mobile-toggle {
+            display: none;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1001;
+            background: var(--primary-purple);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.6rem 0.8rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .mobile-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        .mobile-overlay.show {
+            display: block;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-260px);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-wrapper {
+                margin-left: 0;
+            }
+
+            .mobile-toggle {
+                display: block;
+            }
+
+            .top-navbar {
+                padding-left: 4rem;
+            }
+
+            .main-content {
+                padding: 0 1rem 1rem 1rem;
+            }
+
+            /* Hide tables on mobile, show cards */
+            .table-view {
+                display: none !important;
+            }
+
+            .card-view {
+                display: block !important;
+            }
+        }
+
+        @media (min-width: 769px) {
+            /* Show tables on desktop, hide cards */
+            .table-view {
+                display: block !important;
+            }
+
+            .card-view {
+                display: none !important;
+            }
+        }
+
+        /* Card View Styles for Mobile */
+        .mobile-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .mobile-card-header {
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .mobile-card-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .mobile-card-row:last-child {
+            border-bottom: none;
+        }
+
+        .mobile-card-label {
+            font-weight: 600;
+            color: var(--slate-light);
+            font-size: 0.875rem;
+        }
+
+        .mobile-card-value {
+            color: var(--slate);
+            font-size: 0.875rem;
+            text-align: right;
+        }
     </style>
 </head>
 <body>
+    {% if current_user.is_authenticated %}
+    <!-- Mobile Toggle Button -->
+    <button class="mobile-toggle" id="mobileMenuToggle">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Mobile Overlay -->
+    <div class="mobile-overlay" id="mobileOverlay"></div>
+
+    <!-- Left Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <h4>
+                <i class="fas fa-tools me-2"></i>
+                Equipment Rental
+            </h4>
+        </div>
+        <ul class="sidebar-nav">
+            <li class="sidebar-nav-item">
+                <a href="{{ url_for('dashboard.index') }}" class="sidebar-nav-link {{ 'active' if request.endpoint == 'dashboard.index' }}">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li class="sidebar-nav-item">
+                <a href="{{ url_for('rentals.list_rentals') }}" class="sidebar-nav-link {{ 'active' if 'rentals.list_rentals' in request.endpoint or 'rentals.view_rental' in request.endpoint }}">
+                    <i class="fas fa-clipboard-list"></i>
+                    <span>Rentals</span>
+                </a>
+            </li>
+            <li class="sidebar-nav-item">
+                <a href="{{ url_for('rentals.list_customers') }}" class="sidebar-nav-link {{ 'active' if 'rentals.list_customers' in request.endpoint or 'customers' in request.endpoint }}">
+                    <i class="fas fa-users"></i>
+                    <span>Customers</span>
+                </a>
+            </li>
+            <li class="sidebar-nav-item">
+                <a href="{{ url_for('rentals.list_equipment') }}" class="sidebar-nav-link {{ 'active' if 'rentals.list_equipment' in request.endpoint or 'equipment' in request.endpoint }}">
+                    <i class="fas fa-toolbox"></i>
+                    <span>Equipment</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Main Wrapper -->
+    <div class="main-wrapper">
+        <!-- Top Navbar -->
+        <div class="top-navbar">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-muted">Welcome back,</span>
+                    <strong class="ms-2" style="color: var(--primary-purple);">
+                        <i class="fas fa-user me-1"></i>{{ current_user.get_full_name() }}
+                    </strong>
+                </div>
+                <div>
+                    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger btn-sm">
+                        <i class="fas fa-sign-out-alt me-1"></i>Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+    {% else %}
+    <!-- Login Page (No Sidebar) -->
     <nav class="navbar navbar-expand-lg navbar-gcsu">
         <div class="container-fluid">
-            {% if current_user.is_authenticated %}
-                <a class="navbar-brand" href="{{ url_for('dashboard.index') }}">
-                    <i class="fas fa-tools me-2"></i>Equipment Rental System
-                </a>
-            {% else %}
-                <a class="navbar-brand" href="{{ url_for('auth.login') }}">
-                    <i class="fas fa-tools me-2"></i>Equipment Rental System
-                </a>
-            {% endif %}
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    {% if current_user.is_authenticated %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('dashboard.index') }}">
-                                <i class="fas fa-chart-line me-1"></i>Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('rentals.list_rentals') }}">
-                                <i class="fas fa-clipboard-list me-1"></i>Rentals
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('rentals.list_customers') }}">
-                                <i class="fas fa-users me-1"></i>Customers
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('rentals.list_equipment') }}">
-                                <i class="fas fa-toolbox me-1"></i>Equipment
-                            </a>
-                        </li>
-                    {% endif %}
-                </ul>
-                <ul class="navbar-nav ms-auto">
-                    {% if current_user.is_authenticated %}
-                        <li class="nav-item">
-                            <span class="nav-link">
-                                <i class="fas fa-user me-1"></i>{{ current_user.get_full_name() }}
-                            </span>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('auth.logout') }}">
-                                <i class="fas fa-sign-out-alt me-1"></i>Logout
-                            </a>
-                        </li>
-                    {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('auth.login') }}">
-                                <i class="fas fa-sign-in-alt me-1"></i>Login
-                            </a>
-                        </li>
-                    {% endif %}
-                </ul>
-            </div>
+            <a class="navbar-brand" href="{{ url_for('auth.login') }}">
+                <i class="fas fa-tools me-2"></i>Equipment Rental System
+            </a>
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('auth.login') }}">
+                        <i class="fas fa-sign-in-alt me-1"></i>Login
+                    </a>
+                </li>
+            </ul>
         </div>
     </nav>
 
@@ -279,12 +520,32 @@
                 {% endfor %}
             {% endif %}
         {% endwith %}
-        
-        {% block content %}{% endblock %}
+
+        {% block login_content %}{% endblock %}
     </div>
+    {% endif %}
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Mobile menu toggle
+        const mobileToggle = document.getElementById('mobileMenuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('mobileOverlay');
+
+        if (mobileToggle && sidebar && overlay) {
+            mobileToggle.addEventListener('click', function() {
+                sidebar.classList.add('show');
+                overlay.classList.add('show');
+            });
+
+            overlay.addEventListener('click', function() {
+                sidebar.classList.remove('show');
+                overlay.classList.remove('show');
+            });
+        }
+    </script>
 
     {% block scripts %}{% endblock %}
 </body>

@@ -3,18 +3,41 @@
 {% block content %}
 <div class="container-fluid">
     <div class="row mb-4">
-        <div class="col-12">
-            <h1><i class="fas fa-clipboard-list me-2"></i>All Rentals</h1>
-            <p class="text-muted">Manage and view all rental transactions</p>
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-clipboard-list me-2"></i>Rentals</h1>
+                <p class="text-muted">Manage and view all rental transactions</p>
+            </div>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createRentalModal">
+                <i class="fas fa-plus me-2"></i>Create New Rental
+            </button>
         </div>
     </div>
 
     <div class="row">
         <div class="col-12">
             <div class="card">
+                <!-- Tabs -->
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link {% if status_filter == 'active' %}active{% endif %}"
+                               href="{{ url_for('rentals.list_rentals', status='active') }}">
+                                <i class="fas fa-hourglass-half me-2"></i>Active Rentals
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link {% if status_filter == 'completed' %}active{% endif %}"
+                               href="{{ url_for('rentals.list_rentals', status='completed') }}">
+                                <i class="fas fa-check-circle me-2"></i>Completed Rentals
+                            </a>
+                        </li>
+                    </ul>
+                </div>
                 <div class="card-body">
                     {% if rentals %}
-                        <div class="table-responsive">
+                        <!-- Table View (Desktop) -->
+                        <div class="table-responsive table-view">
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
@@ -69,13 +92,22 @@
                                         </td>
                                         <td class="text-end"><strong>${{ "%.2f"|format(rental.total_cost) }}</strong></td>
                                         <td class="text-center">
-                                            <a href="{{ url_for('rentals.view_rental', rental_id=rental.rental_id) }}" class="btn btn-sm btn-outline-primary">
-                                                <i class="fas fa-eye"></i> View
+                                            <a href="{{ url_for('rentals.view_rental', rental_id=rental.rental_id) }}" class="btn btn-sm btn-outline-primary" title="View Details">
+                                                <i class="fas fa-eye"></i>
                                             </a>
-                                            {% if rental.status != 'Completed' %}
+                                            {% if status_filter == 'completed' %}
+                                                <!-- Completed tab: Show Reactivate and Delete -->
+                                                <button class="btn btn-sm btn-outline-warning" onclick="reactivateRental({{ rental.rental_id }}, '{{ rental.customer_first_name }} {{ rental.customer_last_name }}')" title="Reactivate Rental">
+                                                    <i class="fas fa-undo"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger" onclick="deleteRental({{ rental.rental_id }}, '{{ rental.customer_first_name }} {{ rental.customer_last_name }}')" title="Delete Rental">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            {% else %}
+                                                <!-- Active tab: Show Return button -->
                                                 <form method="POST" action="{{ url_for('rentals.return_rental', rental_id=rental.rental_id) }}" class="d-inline">
-                                                    <button type="submit" class="btn btn-sm btn-outline-success" onclick="return confirm('Mark this rental as returned?')">
-                                                        <i class="fas fa-check"></i> Return
+                                                    <button type="submit" class="btn btn-sm btn-outline-success" onclick="return confirm('Mark this rental as returned?')" title="Return Rental">
+                                                        <i class="fas fa-check"></i>
                                                     </button>
                                                 </form>
                                             {% endif %}
@@ -84,6 +116,73 @@
                                     {% endfor %}
                                 </tbody>
                             </table>
+                        </div>
+
+                        <!-- Card View (Mobile) -->
+                        <div class="card-view">
+                            {% for rental in rentals %}
+                            <div class="mobile-card">
+                                <div class="mobile-card-header">
+                                    <h6 class="mb-1">
+                                        <strong>#{{ rental.rental_id }}</strong> - {{ rental.customer_first_name }} {{ rental.customer_last_name }}
+                                    </h6>
+                                    {% if rental.status == 'Active' %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% elif rental.status == 'Overdue' %}
+                                        <span class="badge bg-danger">Overdue ({{ rental.days_overdue }} days)</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Completed</span>
+                                    {% endif %}
+                                </div>
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Rental Date</span>
+                                    <span class="mobile-card-value">{{ rental.rental_date }}</span>
+                                </div>
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Due Date</span>
+                                    <span class="mobile-card-value">{{ rental.due_date }}</span>
+                                </div>
+                                {% if rental.return_date %}
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Return Date</span>
+                                    <span class="mobile-card-value">{{ rental.return_date }}</span>
+                                </div>
+                                {% endif %}
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Subtotal</span>
+                                    <span class="mobile-card-value">${{ "%.2f"|format(rental.subtotal) }}</span>
+                                </div>
+                                {% if rental.late_fee > 0 %}
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Late Fee</span>
+                                    <span class="mobile-card-value text-danger">${{ "%.2f"|format(rental.late_fee) }}</span>
+                                </div>
+                                {% endif %}
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Total</span>
+                                    <span class="mobile-card-value"><strong>${{ "%.2f"|format(rental.total_cost) }}</strong></span>
+                                </div>
+                                <div class="d-flex gap-2 mt-3">
+                                    <a href="{{ url_for('rentals.view_rental', rental_id=rental.rental_id) }}" class="btn btn-sm btn-outline-primary flex-fill">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                    {% if status_filter == 'completed' %}
+                                        <button class="btn btn-sm btn-outline-warning flex-fill" onclick="reactivateRental({{ rental.rental_id }}, '{{ rental.customer_first_name }} {{ rental.customer_last_name }}')">
+                                            <i class="fas fa-undo"></i> Reactivate
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger flex-fill" onclick="deleteRental({{ rental.rental_id }}, '{{ rental.customer_first_name }} {{ rental.customer_last_name }}')">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    {% else %}
+                                        <form method="POST" action="{{ url_for('rentals.return_rental', rental_id=rental.rental_id) }}" class="flex-fill">
+                                            <button type="submit" class="btn btn-sm btn-outline-success w-100" onclick="return confirm('Mark this rental as returned?')">
+                                                <i class="fas fa-check"></i> Return
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
                         </div>
                     {% else %}
                         <div class="alert alert-info">
@@ -95,4 +194,241 @@
         </div>
     </div>
 </div>
+
+<!-- Create Rental Modal -->
+<div class="modal fade" id="createRentalModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-calendar-plus me-2"></i>Create New Rental</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('rentals.create_rental') }}" id="createRentalForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Customer *</label>
+                            <select class="form-select" name="customer_id" required>
+                                <option value="">Select a customer...</option>
+                                {% for customer in customers %}
+                                    <option value="{{ customer.customer_id }}">
+                                        {{ customer.first_name }} {{ customer.last_name }} - {{ customer.email }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Rental Date *</label>
+                            <input type="date" class="form-control" name="rental_date" id="rental_date" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Due Date *</label>
+                            <input type="date" class="form-control" name="due_date" id="due_date" required>
+                        </div>
+                    </div>
+
+                    <hr>
+                    <h6><i class="fas fa-toolbox me-2"></i>Equipment Items</h6>
+                    <div id="equipment-container">
+                        <div class="equipment-item mb-3">
+                            <div class="row">
+                                <div class="col-md-7">
+                                    <label class="form-label">Equipment *</label>
+                                    <select class="form-select equipment-select" name="equipment_ids[]" required onchange="updateDailyRate(this)">
+                                        <option value="">Select equipment...</option>
+                                        {% for equip in equipment %}
+                                            <option value="{{ equip.equipment_id }}" data-rate="{{ equip.daily_rate }}">
+                                                {{ equip.equipment_name }} - ${{ "%.2f"|format(equip.daily_rate) }}/day
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Days *</label>
+                                    <input type="number" class="form-control days-input" name="days_rented[]" min="1" value="1" required onchange="calculateTotal()">
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button type="button" class="btn btn-danger w-100" onclick="removeEquipment(this)" disabled>
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-sm btn-outline-primary mb-3" onclick="addEquipmentRow()">
+                        <i class="fas fa-plus me-2"></i>Add Another Equipment Item
+                    </button>
+
+                    <div class="alert alert-info">
+                        <strong>Estimated Total:</strong> $<span id="estimated-total">0.00</span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea class="form-control" name="notes" rows="2" placeholder="Optional notes..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Rental</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Rental Modal -->
+<div class="modal fade" id="deleteRentalModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle me-2"></i>Delete Rental</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="deleteRentalForm">
+                <div class="modal-body">
+                    <p>Are you sure you want to delete the rental for <strong id="delete_rental_customer"></strong>?</p>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle me-2"></i>
+                        This action cannot be undone. Active rentals cannot be deleted.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete Rental</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Reactivate Rental Modal -->
+<div class="modal fade" id="reactivateRentalModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title"><i class="fas fa-undo me-2"></i>Reactivate Rental</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="reactivateRentalForm">
+                <div class="modal-body">
+                    <p>Are you sure you want to reactivate the rental for <strong id="reactivate_rental_customer"></strong>?</p>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        This will:
+                        <ul class="mb-0 mt-2">
+                            <li>Change status back to "Active"</li>
+                            <li>Clear the return date</li>
+                            <li>Remove any late fees</li>
+                            <li>Set equipment back to "Rented" status</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">Reactivate Rental</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Set today's date as default for rental date
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('rental_date').value = today;
+
+    // Set due date to 7 days from today
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    document.getElementById('due_date').value = nextWeek.toISOString().split('T')[0];
+});
+
+function addEquipmentRow() {
+    const container = document.getElementById('equipment-container');
+    const newRow = document.createElement('div');
+    newRow.className = 'equipment-item mb-3';
+    newRow.innerHTML = `
+        <div class="row">
+            <div class="col-md-7">
+                <label class="form-label">Equipment *</label>
+                <select class="form-select equipment-select" name="equipment_ids[]" required onchange="updateDailyRate(this)">
+                    <option value="">Select equipment...</option>
+                    {% for equip in equipment %}
+                        <option value="{{ equip.equipment_id }}" data-rate="{{ equip.daily_rate }}">
+                            {{ equip.equipment_name }} - ${{ "%.2f"|format(equip.daily_rate) }}/day
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Days *</label>
+                <input type="number" class="form-control days-input" name="days_rented[]" min="1" value="1" required onchange="calculateTotal()">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="button" class="btn btn-danger w-100" onclick="removeEquipment(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    container.appendChild(newRow);
+    updateRemoveButtons();
+}
+
+function removeEquipment(button) {
+    button.closest('.equipment-item').remove();
+    updateRemoveButtons();
+    calculateTotal();
+}
+
+function updateRemoveButtons() {
+    const items = document.querySelectorAll('.equipment-item');
+    items.forEach((item, index) => {
+        const removeBtn = item.querySelector('.btn-danger');
+        removeBtn.disabled = items.length === 1;
+    });
+}
+
+function updateDailyRate(select) {
+    calculateTotal();
+}
+
+function calculateTotal() {
+    let total = 0;
+    const equipmentSelects = document.querySelectorAll('.equipment-select');
+    const daysInputs = document.querySelectorAll('.days-input');
+
+    equipmentSelects.forEach((select, index) => {
+        const selectedOption = select.options[select.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+            const dailyRate = parseFloat(selectedOption.getAttribute('data-rate') || 0);
+            const days = parseInt(daysInputs[index].value || 1);
+            total += dailyRate * days;
+        }
+    });
+
+    document.getElementById('estimated-total').textContent = total.toFixed(2);
+}
+
+function deleteRental(id, customerName) {
+    document.getElementById('deleteRentalForm').action = "{{ url_for('rentals.delete_rental', rental_id=0) }}".replace('0', id);
+    document.getElementById('delete_rental_customer').textContent = customerName;
+    new bootstrap.Modal(document.getElementById('deleteRentalModal')).show();
+}
+
+function reactivateRental(id, customerName) {
+    document.getElementById('reactivateRentalForm').action = "{{ url_for('rentals.reactivate_rental', rental_id=0) }}".replace('0', id);
+    document.getElementById('reactivate_rental_customer').textContent = customerName;
+    new bootstrap.Modal(document.getElementById('reactivateRentalModal')).show();
+}
+</script>
 {% endblock %}

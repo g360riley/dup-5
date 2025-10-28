@@ -3,18 +3,41 @@
 {% block content %}
 <div class="container-fluid">
     <div class="row mb-4">
-        <div class="col-12">
-            <h1><i class="fas fa-toolbox me-2"></i>Equipment Inventory</h1>
-            <p class="text-muted">View all equipment and rental statistics</p>
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-toolbox me-2"></i>Equipment Inventory</h1>
+                <p class="text-muted">View all equipment and rental statistics</p>
+            </div>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createEquipmentModal">
+                <i class="fas fa-plus me-2"></i>Add New Equipment
+            </button>
         </div>
     </div>
 
     <div class="row">
         <div class="col-12">
             <div class="card">
+                <!-- Tabs -->
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link {% if status_filter == 'active' %}active{% endif %}"
+                               href="{{ url_for('rentals.list_equipment', status='active') }}">
+                                <i class="fas fa-tools me-2"></i>Active Equipment
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link {% if status_filter == 'archived' %}active{% endif %}"
+                               href="{{ url_for('rentals.list_equipment', status='archived') }}">
+                                <i class="fas fa-archive me-2"></i>Archived Equipment
+                            </a>
+                        </li>
+                    </ul>
+                </div>
                 <div class="card-body">
                     {% if equipment_list %}
-                        <div class="table-responsive">
+                        <!-- Table View (Desktop) -->
+                        <div class="table-responsive table-view">
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
@@ -28,6 +51,7 @@
                                         <th class="text-center">Times Rented</th>
                                         <th class="text-end">Total Revenue</th>
                                         <th>Serial Number</th>
+                                        <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -67,10 +91,106 @@
                                             <strong>${{ "%.2f"|format(equipment.total_revenue) }}</strong>
                                         </td>
                                         <td><small class="text-muted">{{ equipment.serial_number }}</small></td>
+                                        <td class="text-center">
+                                            {% if status_filter == 'archived' %}
+                                                <!-- Archived tab: Show Restore and Delete -->
+                                                <button class="btn btn-sm btn-outline-success" onclick="unarchiveEquipment({{ equipment.equipment_id }}, '{{ equipment.equipment_name }}')" title="Restore Equipment">
+                                                    <i class="fas fa-undo"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger" onclick="deleteEquipment({{ equipment.equipment_id }}, '{{ equipment.equipment_name }}')" title="Delete Equipment">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            {% else %}
+                                                <!-- Active tab: Show Edit and Archive -->
+                                                <button class="btn btn-sm btn-outline-primary" onclick="editEquipment({{ equipment.equipment_id }}, '{{ equipment.equipment_name }}', '{{ equipment.equipment_type }}', '{{ equipment.description }}', {{ equipment.daily_rate }}, '{{ equipment.condition_status }}', '{{ equipment.availability_status }}', '{{ equipment.serial_number }}', '{{ equipment.purchase_date }}')" title="Edit Equipment">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-warning" onclick="archiveEquipment({{ equipment.equipment_id }}, '{{ equipment.equipment_name }}')" title="Archive Equipment">
+                                                    <i class="fas fa-archive"></i>
+                                                </button>
+                                            {% endif %}
+                                        </td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
+                        </div>
+
+                        <!-- Card View (Mobile) -->
+                        <div class="card-view">
+                            {% for equipment in equipment_list %}
+                            <div class="mobile-card">
+                                <div class="mobile-card-header">
+                                    <h6 class="mb-1">
+                                        <strong>#{{ equipment.equipment_id }}</strong> - {{ equipment.equipment_name }}
+                                    </h6>
+                                    <span class="badge bg-secondary">{{ equipment.equipment_type }}</span>
+                                </div>
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Description</span>
+                                    <span class="mobile-card-value">{{ equipment.description }}</span>
+                                </div>
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Daily Rate</span>
+                                    <span class="mobile-card-value"><strong>${{ "%.2f"|format(equipment.daily_rate) }}</strong></span>
+                                </div>
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Condition</span>
+                                    <span class="mobile-card-value">
+                                        {% if equipment.condition_status == 'Excellent' %}
+                                            <span class="badge bg-success">{{ equipment.condition_status }}</span>
+                                        {% elif equipment.condition_status == 'Good' %}
+                                            <span class="badge bg-info">{{ equipment.condition_status }}</span>
+                                        {% elif equipment.condition_status == 'Fair' %}
+                                            <span class="badge bg-warning">{{ equipment.condition_status }}</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">{{ equipment.condition_status }}</span>
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Availability</span>
+                                    <span class="mobile-card-value">
+                                        {% if equipment.availability_status == 'Available' %}
+                                            <span class="badge bg-success">{{ equipment.availability_status }}</span>
+                                        {% elif equipment.availability_status == 'Rented' %}
+                                            <span class="badge bg-warning">{{ equipment.availability_status }}</span>
+                                        {% elif equipment.availability_status == 'Maintenance' %}
+                                            <span class="badge bg-info">{{ equipment.availability_status }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ equipment.availability_status }}</span>
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Times Rented</span>
+                                    <span class="mobile-card-value">
+                                        <span class="badge bg-primary">{{ equipment.times_rented }}</span>
+                                    </span>
+                                </div>
+                                <div class="mobile-card-row">
+                                    <span class="mobile-card-label">Total Revenue</span>
+                                    <span class="mobile-card-value"><strong>${{ "%.2f"|format(equipment.total_revenue) }}</strong></span>
+                                </div>
+                                <div class="d-flex gap-2 mt-3">
+                                    {% if status_filter == 'archived' %}
+                                        <button class="btn btn-sm btn-outline-success flex-fill" onclick="unarchiveEquipment({{ equipment.equipment_id }}, '{{ equipment.equipment_name }}')">
+                                            <i class="fas fa-undo"></i> Restore
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger flex-fill" onclick="deleteEquipment({{ equipment.equipment_id }}, '{{ equipment.equipment_name }}')">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    {% else %}
+                                        <button class="btn btn-sm btn-outline-primary flex-fill" onclick="editEquipment({{ equipment.equipment_id }}, '{{ equipment.equipment_name }}', '{{ equipment.equipment_type }}', '{{ equipment.description }}', {{ equipment.daily_rate }}, '{{ equipment.condition_status }}', '{{ equipment.availability_status }}', '{{ equipment.serial_number }}', '{{ equipment.purchase_date }}')">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-warning flex-fill" onclick="archiveEquipment({{ equipment.equipment_id }}, '{{ equipment.equipment_name }}')">
+                                            <i class="fas fa-archive"></i> Archive
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
                         </div>
                     {% else %}
                         <div class="alert alert-info">
@@ -82,4 +202,251 @@
         </div>
     </div>
 </div>
+
+<!-- Create Equipment Modal -->
+<div class="modal fade" id="createEquipmentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-tools me-2"></i>Add New Equipment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('rentals.create_equipment') }}">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Equipment Name *</label>
+                            <input type="text" class="form-control" name="equipment_name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Equipment Type *</label>
+                            <input type="text" class="form-control" name="equipment_type" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" rows="2"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Daily Rate ($) *</label>
+                            <input type="number" class="form-control" name="daily_rate" step="0.01" min="0" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Condition *</label>
+                            <select class="form-select" name="condition_status" required>
+                                <option value="Excellent">Excellent</option>
+                                <option value="Good" selected>Good</option>
+                                <option value="Fair">Fair</option>
+                                <option value="Poor">Poor</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Availability *</label>
+                            <select class="form-select" name="availability_status" required>
+                                <option value="Available" selected>Available</option>
+                                <option value="Rented">Rented</option>
+                                <option value="Maintenance">Maintenance</option>
+                                <option value="Retired">Retired</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Serial Number</label>
+                            <input type="text" class="form-control" name="serial_number">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Purchase Date</label>
+                            <input type="date" class="form-control" name="purchase_date">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Equipment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Equipment Modal -->
+<div class="modal fade" id="editEquipmentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Edit Equipment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="editEquipmentForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Equipment Name *</label>
+                            <input type="text" class="form-control" name="equipment_name" id="edit_equipment_name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Equipment Type *</label>
+                            <input type="text" class="form-control" name="equipment_type" id="edit_equipment_type" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" id="edit_description" rows="2"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Daily Rate ($) *</label>
+                            <input type="number" class="form-control" name="daily_rate" id="edit_daily_rate" step="0.01" min="0" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Condition *</label>
+                            <select class="form-select" name="condition_status" id="edit_condition_status" required>
+                                <option value="Excellent">Excellent</option>
+                                <option value="Good">Good</option>
+                                <option value="Fair">Fair</option>
+                                <option value="Poor">Poor</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Availability *</label>
+                            <select class="form-select" name="availability_status" id="edit_availability_status" required>
+                                <option value="Available">Available</option>
+                                <option value="Rented">Rented</option>
+                                <option value="Maintenance">Maintenance</option>
+                                <option value="Retired">Retired</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Serial Number</label>
+                            <input type="text" class="form-control" name="serial_number" id="edit_serial_number">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Purchase Date</label>
+                            <input type="date" class="form-control" name="purchase_date" id="edit_purchase_date">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Archive Equipment Modal -->
+<div class="modal fade" id="archiveEquipmentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title"><i class="fas fa-archive me-2"></i>Archive Equipment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="archiveEquipmentForm">
+                <div class="modal-body">
+                    <p>Are you sure you want to archive <strong id="archive_equipment_name"></strong>?</p>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Archived equipment will be hidden from the active list but all historical rental data will be preserved for reporting. Equipment in active rentals cannot be archived.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">Archive Equipment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Unarchive Equipment Modal -->
+<div class="modal fade" id="unarchiveEquipmentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-undo me-2"></i>Restore Equipment</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="unarchiveEquipmentForm">
+                <div class="modal-body">
+                    <p>Are you sure you want to restore <strong id="unarchive_equipment_name"></strong>?</p>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        This equipment will be restored to the active equipment list.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Restore Equipment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Equipment Modal -->
+<div class="modal fade" id="deleteEquipmentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle me-2"></i>Delete Equipment</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="deleteEquipmentForm">
+                <div class="modal-body">
+                    <p>Are you sure you want to permanently delete <strong id="delete_equipment_name"></strong>?</p>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle me-2"></i>
+                        This action cannot be undone. Only archived equipment without rental history can be deleted.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete Equipment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function editEquipment(id, name, type, description, dailyRate, condition, availability, serialNumber, purchaseDate) {
+    document.getElementById('editEquipmentForm').action = "{{ url_for('rentals.edit_equipment', equipment_id=0) }}".replace('0', id);
+    document.getElementById('edit_equipment_name').value = name;
+    document.getElementById('edit_equipment_type').value = type;
+    document.getElementById('edit_description').value = description;
+    document.getElementById('edit_daily_rate').value = dailyRate;
+    document.getElementById('edit_condition_status').value = condition;
+    document.getElementById('edit_availability_status').value = availability;
+    document.getElementById('edit_serial_number').value = serialNumber;
+    document.getElementById('edit_purchase_date').value = purchaseDate !== 'None' ? purchaseDate : '';
+    new bootstrap.Modal(document.getElementById('editEquipmentModal')).show();
+}
+
+function archiveEquipment(id, name) {
+    document.getElementById('archiveEquipmentForm').action = "{{ url_for('rentals.archive_equipment', equipment_id=0) }}".replace('0', id);
+    document.getElementById('archive_equipment_name').textContent = name;
+    new bootstrap.Modal(document.getElementById('archiveEquipmentModal')).show();
+}
+
+function unarchiveEquipment(id, name) {
+    document.getElementById('unarchiveEquipmentForm').action = "{{ url_for('rentals.unarchive_equipment', equipment_id=0) }}".replace('0', id);
+    document.getElementById('unarchive_equipment_name').textContent = name;
+    new bootstrap.Modal(document.getElementById('unarchiveEquipmentModal')).show();
+}
+
+function deleteEquipment(id, name) {
+    document.getElementById('deleteEquipmentForm').action = "{{ url_for('rentals.delete_equipment', equipment_id=0) }}".replace('0', id);
+    document.getElementById('delete_equipment_name').textContent = name;
+    new bootstrap.Modal(document.getElementById('deleteEquipmentModal')).show();
+}
+</script>
 {% endblock %}

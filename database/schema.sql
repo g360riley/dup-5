@@ -36,6 +36,7 @@ CREATE TABLE customer (
     state VARCHAR(2),
     zip_code VARCHAR(10),
     drivers_license VARCHAR(50),
+    is_archived BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -51,6 +52,7 @@ CREATE TABLE equipment (
     availability_status ENUM('Available', 'Rented', 'Maintenance', 'Retired') DEFAULT 'Available',
     purchase_date DATE,
     serial_number VARCHAR(100) UNIQUE,
+    is_archived BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -93,8 +95,10 @@ CREATE INDEX idx_employee_username ON employee(username);
 CREATE INDEX idx_employee_email ON employee(email);
 CREATE INDEX idx_customer_name ON customer(last_name, first_name);
 CREATE INDEX idx_customer_email ON customer(email);
+CREATE INDEX idx_customer_archived ON customer(is_archived);
 CREATE INDEX idx_equipment_type ON equipment(equipment_type);
 CREATE INDEX idx_equipment_status ON equipment(availability_status);
+CREATE INDEX idx_equipment_archived ON equipment(is_archived);
 CREATE INDEX idx_rental_customer ON rental(customer_id);
 CREATE INDEX idx_rental_employee ON rental(employee_id);
 CREATE INDEX idx_rental_status ON rental(status);

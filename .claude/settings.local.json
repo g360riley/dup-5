@@ -15,7 +15,12 @@
       "WebFetch(domain:www.brandcolorcode.com)",
       "Bash(git init:*)",
       "Bash(git remote add:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nBuild complete equipment rental management system with authentication and dashboard\n\n- Implement 5-table database schema (employee, customer, equipment, rental, rental_detail)\n- Add Flask-Login authentication system with employee model\n- Create dynamic dashboard with rental metrics and analytics\n- Implement 10% late fee calculation for overdue rentals\n- Build rental management with return processing\n- Add customer and equipment inventory views\n- Create modern purple/teal/emerald UI theme\n- Include deployment scripts for schema and seed data\n- Add comprehensive README with setup instructions\n\nFeatures:\n- Employee authentication with secure password hashing\n- Dashboard displaying total revenue, most rented equipment, and overdue rentals\n- Automatic late fee calculation (10% of subtotal)\n- Rental tracking with active, completed, and overdue status\n- Customer management with rental history\n- Equipment inventory with availability tracking\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git config:*)",
+      "Bash(git push:*)",
+      "Bash(del:*)",
+      "Bash(del databaseadd_archive_fields.sql)"
     ],
     "deny": [],
     "ask": []
